@@ -1,0 +1,50 @@
+.trace {
+	padding: 5px 10px;
+	margin: 10px;
+	background-color: #1c1c1c;
+}
+.trace-id {
+	color: #aaa;
+}
+.trace-time {
+	display: flex;
+	margin: 5px;
+	justify-content: space-between;
+}
+.spans {
+	margin: 5px;
+}
+.span {
+	position: relative;
+	margin: 5px 0;
+	cursor: pointer;
+	height: 1.4rem;
+	border-radius: 4px;
+}
+.span-bar {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	background-color: #282828;
+	border: 1px solid #555;
+	box-sizing: border-box;
+	border-radius: 5px;
+	min-width: 10px;
+}
+.span-text {
+	position: relative;
+	top: 0;
+	z-index: 1;
+	vertical-align: middle;
+	padding: 0 5px;
+}
+.span-id {
+	font-style: italic;
+	font-family: monospace;
+	font-size: 1rem;
+	color: #aaa;
+	margin-right: 10px;
+}
+.span-error {
+	color: #faa;
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>TelUI</title>
+		<link href="/common.css" rel="stylesheet">
+		<link href="/panel.css" rel="stylesheet">
+		<link href="/props.css" rel="stylesheet">
+		<link href="/traces.css" rel="stylesheet">
+		<link href="/logs.css" rel="stylesheet">
+		<link href="/metrics.css" rel="stylesheet">
+		<link rel="icon" type="image/png" href="/icon.png">
+	</head>
+	<body>
+		<div id="navbar">
+			<img id="app-icon" src="/icon.png"><span id="app-name">TelUI</span>
+			<a id="traces-tab" class="tab" href="#traces">Traces</a>
+			<a id="logs-tab" class="tab" href="#logs">Logs</a>
+			<a id="metrics-tab" class="tab" href="#metrics">Metrics</a>
+			<span class="separator"></span>
+			<span>Live <input type="checkbox" id="live" checked/></span>
+		</div>
+		<div id="body">Loading...</div>
+		<div id="panel" hidden>
+			<div id="panel-resizer"></div>
+			<div id="panel-content">
+				<div id="panel-header">
+					<span id="panel-title"></span>
+					<a id="panel-close">Close</a>
+				</div>
+				<div id="panel-body"></div>
+			</div>
+		</div>
+
+		<template id="prop-template">
+			<div class="prop">
+				<div class="prop-first-line">
+					<span class="prop-key"></span><span class="prop-inline-value"></span><span class="prop-type badge"></span>
+				</div>
+				<div class="prop-children"></div>
+			</div>
+		</template>
+		<template id="trace-template">
+			<div class="trace">
+				<span class="trace-id"></span>
+				<div class="trace-time">
+					<span class="trace-start"></span>
+					<span class="trace-end"></span>
+				</div>
+				<div class="spans"></div>
+			</div>
+		</template>
+		<template id="span-template">
+			<div class="span">
+				<div class="span-bar"></div>
+				<div class="span-text">
+					<span class="span-id"></span>
+					<span class="span-name"></span>
+				</div>
+			</div>
+		</template>
+		<template id="log-template">
+			<div class="log">
+				<span class="log-time"></span>
+				<span class="log-sev"></span>
+				<span class="log-body"></span>
+			</div>
+		</template>
+		<template id="resource-template">
+			<div class="resource">
+				<span>Resource</span>
+				<div class="resource-props"></div>
+			</div>
+			<div class="resource-items"></div>
+		</template>
+		<template id="scope-template">
+			<div class="scope">
+				<span>Scope</span>
+				<div class="scope-props"></div>
+			</div>
+			<div class="scope-items"></div>
+		</template>
+		<template id="metric-template">
+			<div class="metric">
+				<span class="metric-name"></span> <span class="metric-unit badge"></span> <span class="metric-type badge"></span><br>
+				<span class="metric-desc"></span>
+			</div>
+		</template>
+		<template id="metric-stream-template">
+			<div class="metric-stream">
+				<span>Metric stream</span>
+				<div class="metric-stream-attrs"></div>
+				<div class="metric-stream-points"></div>
+			</div>
+		</template>
+		<template id="graph-template">
+			<div class="graph">
+				<div class="graph-grid">
+					<canvas class="graph-canvas"></canvas>
+					<div class="graph-right-labels">
+						<span class="graph-max-value"></span>
+						<span class="graph-min-value"></span>
+					</div>
+					<div class="graph-bottom-labels">
+						<span class="graph-min-time"></span>
+						<span class="graph-max-time"></span>
+					</div>
+				</div>
+				<div class="graph-point-props"></div>
+			</div>
+		</template>
+
+		<script src="/utils.js"></script>
+		<script src="/panel.js"></script>
+		<script src="/props.js"></script>
+		<script src="/graph.js"></script>
+		<script src="/traces.js"></script>
+		<script src="/logs.js"></script>
+		<script src="/metrics.js"></script>
+		<script src="/runner.js"></script>
+	</body>
+</html>

@@ -1,0 +1,87 @@
+.resource, .scope, .metric {
+	margin: 0.4rem;
+	margin-bottom: 0;
+	background-color: #222;
+	width: fit-content;
+	padding: 0.4rem;
+}
+.resource, .scope {
+	border-radius: 0.5rem 0.5rem 0.5rem 0;
+}
+.metric {
+	border-radius: 0.5rem;
+}
+.resource > span, .scope > span {
+	color: #aaa;
+}
+.resource-items, .scope-items {
+	padding: 0.3rem;
+	margin-left: 0.4rem;
+	border-left: 0.4rem solid #222;
+}
+.metric {
+	cursor: pointer;
+}
+.metric-unit, .metric-type {
+	margin-left: 0.5rem;
+}
+.metric-desc {
+	color: #aaa;
+	font-size: 0.9rem;
+}
+.metric-conflict {
+	color: #f44;
+}
+.metric-stream {
+	border: 1px solid #888;
+	border-radius: 0.5rem;
+	padding: 0.5rem 0.8rem;
+	margin: 0.5rem;	
+}
+.metric-stream > span {
+	color: #aaa;
+	font-size: 0.9rem;
+}
+.metric-stream-points {
+	margin-top: 1rem;
+}
+
+.graph-grid {
+	display: grid;
+	grid-template-columns: auto min-content;
+	grid-template-rows: 8rem auto;
+	column-gap: 0.2rem;
+	row-gap: 0.2rem;
+}
+.graph-canvas {
+	grid-column: 1;
+	grid-row: 1;
+	width: 100%;
+	align-self: stretch;
+	justify-self: stretch;
+}
+.graph-right-labels {
+	grid-column: 2;
+	grid-row: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	text-wrap: nowrap;
+}
+.graph-bottom-labels {
+	grid-column: 1;
+	grid-row: 2;
+	display: flex;
+	justify-content: space-between;
+}
+.graph-right-labels, .graph-bottom-labels {
+	font-size: 0.8rem;
+}
+.graph-point-props:not(:empty) {
+	margin-top: 0.5rem;
+}
+.graph-point-props:not(:empty)::before {
+	content: "Point properties";
+	color: #aaa;
+	font-size: 0.9rem;
+}

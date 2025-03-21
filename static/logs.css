@@ -1,0 +1,31 @@
+.log {
+	display: flex;
+	font-family: monospace;
+	font-size: 0.85rem;
+	padding: 0.1rem 0.4rem;
+	text-wrap: nowrap;
+	cursor: pointer;
+	user-select: none;
+}
+.log-time {
+	color: #aaa;
+}
+.log-sev {
+	text-align: center;
+	width: 4rem;
+	flex-shrink: 0;
+}
+.log-body {
+	overflow-x: hidden;
+	text-overflow: "[...]";
+	white-space: pre;
+}
+.log-debug {
+	color: #aaa;
+}
+.log-warn {
+	color: #fb4;
+}
+.log-error {
+	color: #f44;
+}
