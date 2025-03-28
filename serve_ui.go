@@ -174,6 +174,10 @@ func serveUi(st *storage, endpoint string) (stopFunc, error) {
 		})
 	})
 
+	mux.HandleFunc("POST /api/reset", func(w http.ResponseWriter, r *http.Request) {
+		st.reset()
+	})
+
 	listener, err := net.Listen("tcp", endpoint)
 	if err != nil {
 		return nil, err

@@ -74,3 +74,15 @@ async function updateTab() {
 }
 addEventListener("load", updateTab);
 addEventListener("hashchange", updateTab);
+
+const resetButton = document.querySelector("#reset");
+resetButton.addEventListener("click", async () => {
+	resetButton.disabled = true;
+	try {
+		await fetch("/api/reset", { method: "POST" });
+		updateTab();
+	} catch(err) {
+		console.error(er);
+	}
+	resetButton.disabled = false;
+});

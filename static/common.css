@@ -47,6 +47,13 @@ body {
 .separator {
 	flex-grow: 1;
 }
+#live {
+	padding: 0.8rem 5px;
+}
+#reset {
+	padding: 0.3rem 0.5rem;
+	margin: 0 10px;
+}
 
 .selected {
 	outline: 2px solid #6aa;

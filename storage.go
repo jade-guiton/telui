@@ -25,14 +25,19 @@ type storage struct {
 }
 
 func newStorage(verbose bool) *storage {
-	return &storage{
-		verbose:   verbose,
-		resources: map[resId]resource{},
-		scopes:    map[scopeId]scope{},
-		traces:    map[traceId]*trace{},
-		logs:      nil,
-		metrics:   map[hashId]*metric{},
-	}
+	st := &storage{verbose: verbose}
+	st.reset()
+	return st
+}
+
+func (st *storage) reset() {
+	st.Lock()
+	defer st.Unlock()
+	st.resources = map[resId]resource{}
+	st.scopes = map[scopeId]scope{}
+	st.traces = map[traceId]*trace{}
+	st.logs = nil
+	st.metrics = map[hashId]*metric{}
 }
 
 func (st *storage) receiveResource(r pcommon.Resource, schemaUrl string) resId {
