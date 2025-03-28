@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"jadeg.net/go/telui/static"
 )
 
 func writeGzipJson(w http.ResponseWriter, producer func(io.Writer)) {
@@ -52,7 +54,7 @@ func parseHashId(hashIdStr string) (uint64, bool) {
 func serveUi(st *storage, endpoint string) (stopFunc, error) {
 	mux := http.NewServeMux()
 
-	mux.Handle("GET /", http.FileServer(http.Dir("static")))
+	mux.Handle("GET /", http.FileServerFS(static.StaticFs))
 
 	mux.HandleFunc("GET /api/traces", func(w http.ResponseWriter, r *http.Request) {
 		writeGzipJson(w, func(w io.Writer) {
