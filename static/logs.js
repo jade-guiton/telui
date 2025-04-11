@@ -17,7 +17,6 @@ async function updateLogs() {
 			if(log.sev.startsWith("Error")) logNode.classList.add("log-error");
 			logNode.id = `item-log-${log.id}`;
 			logNode.addEventListener("click", () => {
-				console.log("Test");
 				selectLog(log.id);
 			});
 			return logContent;

@@ -67,7 +67,12 @@ class Graph {
 		this.minValue = null;
 		this.maxValue = null;
 		this.points = [];
+		this.ctx = null;
 		container.appendChild(this.graphNode);
+	}
+
+	setContext(ctx) {
+		this.ctx = ctx;
 	}
 
 	addPoint(style, time, value, props) {
@@ -182,7 +187,7 @@ class Graph {
 		this.labels.maxValue.innerText = formatValue(this.maxValue);
 
 		if(focus) {
-			this.pointProps.replaceChildren(...renderMap({}, focus.props));
+			this.pointProps.replaceChildren(...renderMap(this.ctx, focus.props));
 		} else {
 			this.pointProps.replaceChildren();
 		}

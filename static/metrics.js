@@ -86,22 +86,25 @@ async function selectMetric(metricId, metric) {
 			return;
 		}
 
+		const metric = data.metric;
+
 		let children = [];
-		if(data.conflict) {
+		if(metric.conflict) {
 			const conflictNode = document.createElement("span");
 			conflictNode.classList.add("metric-conflict");
 			conflictNode.innerText = "Conflicting description or metadata was received";
 			children.push(conflictNode);
 		}
-		if(data.meta) {
-			children.push(renderProp({}, "meta", data.meta));
+		if(metric.meta) {
+			children.push(renderProp(data, "meta", metric.meta));
 		}
-
+		
 		const streamTemplate = document.querySelector("#metric-stream-template");
-		children.push(...sortedEntries(data.streams).map(([streamId, stream]) => {
+		children.push(...sortedEntries(metric.streams).map(([streamId, stream]) => {
 			const streamNode = streamTemplate.content.cloneNode(true);
-			streamNode.querySelector(".metric-stream-attrs").replaceChildren(...renderMap({}, stream.attr));
+			streamNode.querySelector(".metric-stream-attrs").replaceChildren(...renderMap(data, stream.attr));
 			const graph = Graph.getGraph(streamId, streamNode.querySelector(".metric-stream-points"));
+			graph.setContext(data);
 			
 			if(metric.type == "Gauge" || metric.type == "Sum") {
 				for(const pt of stream.pts) {

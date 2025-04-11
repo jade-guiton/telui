@@ -36,6 +36,17 @@ function renderProp(ctx, k, v) {
 			type = "time"; inline = timestamp(v._ts);
 		} else if(v._byt) {
 			type = "bytes"; inline = v._byt;
+		} else if(v._req) {
+			type = "req";
+			if(ctx.request) {
+				inline = "";
+				children = renderMap(ctx, ctx.request);
+			} else if(ctx.requests && ctx.requests[v._req]) {
+				inline = "";
+				children = renderMap(ctx, ctx.requests[v._req]);
+			} else {
+				inline = v._req;
+			}
 		} else if(v._res) {
 			type = "res";
 			if(ctx.resource) {

@@ -19,8 +19,8 @@ type traceServer struct {
 	st *storage
 }
 
-func (ts *traceServer) Export(_ context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
-	ts.st.receiveTraces(req.Traces())
+func (ts *traceServer) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
+	ts.st.receiveTraces(req.Traces(), grpcRequest(ctx))
 	return ptraceotlp.NewExportResponse(), nil
 }
 
@@ -29,8 +29,8 @@ type logServer struct {
 	st *storage
 }
 
-func (ls *logServer) Export(_ context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
-	ls.st.receiveLogs(req.Logs())
+func (ls *logServer) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+	ls.st.receiveLogs(req.Logs(), grpcRequest(ctx))
 	return plogotlp.NewExportResponse(), nil
 }
 
@@ -39,8 +39,8 @@ type metricServer struct {
 	st *storage
 }
 
-func (ms *metricServer) Export(_ context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
-	ms.st.receiveMetrics(req.Metrics())
+func (ms *metricServer) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	ms.st.receiveMetrics(req.Metrics(), grpcRequest(ctx))
 	return pmetricotlp.NewExportResponse(), nil
 }
 

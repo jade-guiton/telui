@@ -17,6 +17,7 @@ import (
 type storage struct {
 	sync.Mutex
 	verbose   bool
+	requests  map[reqId]requestMeta
 	resources map[resId]resource
 	scopes    map[scopeId]scope
 	traces    map[traceId]*trace
@@ -33,11 +34,27 @@ func newStorage(verbose bool) *storage {
 func (st *storage) reset() {
 	st.Lock()
 	defer st.Unlock()
+	st.requests = map[reqId]requestMeta{}
 	st.resources = map[resId]resource{}
 	st.scopes = map[scopeId]scope{}
 	st.traces = map[traceId]*trace{}
 	st.logs = nil
 	st.metrics = map[hashId]*metric{}
+}
+
+func (st *storage) receiveRequestMeta(req requestMeta) reqId {
+	reqId := reqId(hashValue(req))
+	st.Lock()
+	if _, ok := st.requests[reqId]; !ok {
+		st.requests[reqId] = req
+	}
+	st.Unlock()
+
+	if st.verbose {
+		fmt.Printf("req: %s\n", jsonToString(req))
+	}
+
+	return reqId
 }
 
 func (st *storage) receiveResource(r pcommon.Resource, schemaUrl string) resId {
@@ -88,7 +105,9 @@ func (st *storage) receiveScope(sc pcommon.InstrumentationScope, schemaUrl strin
 	return scopeId
 }
 
-func (st *storage) receiveTraces(t ptrace.Traces) {
+func (st *storage) receiveTraces(t ptrace.Traces, req requestMeta) {
+	reqId := st.receiveRequestMeta(req)
+
 	rss := t.ResourceSpans()
 	for i := range rss.Len() {
 		rs := rss.At(i)
@@ -114,6 +133,7 @@ func (st *storage) receiveTraces(t ptrace.Traces) {
 						start:  timestampValue(sp.StartTimestamp()),
 						end:    timestampValue(sp.EndTimestamp()),
 					},
+					req:           reqId,
 					res:           resId,
 					scope:         scopeId,
 					statusMsg:     sp.Status().Message(),
@@ -173,7 +193,9 @@ func (st *storage) receiveTraces(t ptrace.Traces) {
 	}
 }
 
-func (st *storage) receiveLogs(l plog.Logs) {
+func (st *storage) receiveLogs(l plog.Logs, req requestMeta) {
+	reqId := st.receiveRequestMeta(req)
+
 	rls := l.ResourceLogs()
 	for i := range rls.Len() {
 		rl := rls.At(i)
@@ -191,6 +213,7 @@ func (st *storage) receiveLogs(l plog.Logs) {
 				lr := lrs.At(k)
 
 				log := log{
+					req:         reqId,
 					res:         resId,
 					scope:       scopeId,
 					time:        timestampValue(lr.Timestamp()),
@@ -271,7 +294,7 @@ type pointSlice[T pointGetter] interface {
 	Len() int
 }
 
-func receivePoints[T pointGetter](st *storage, m *metric, ps pointSlice[T], makePoint func(point, T) value) {
+func receivePoints[T pointGetter](st *storage, reqId reqId, m *metric, ps pointSlice[T], makePoint func(point, T) pointlike) {
 	for i := range ps.Len() {
 		dp := ps.At(i)
 		attr := convertMap(dp.Attributes())
@@ -288,6 +311,7 @@ func receivePoints[T pointGetter](st *storage, m *metric, ps pointSlice[T], make
 			time:      timestampValue(dp.Timestamp()),
 			timeStart: timestampValue(dp.StartTimestamp()),
 			flags:     flagsValue(dp.Flags()),
+			req:       reqId,
 		}, dp)
 
 		st.Lock()
@@ -324,8 +348,8 @@ func convertExemplars(es pmetric.ExemplarSlice) []exemplar {
 	return exemplars
 }
 
-func (st *storage) receiveNumberPoints(m *metric, ndps pmetric.NumberDataPointSlice) {
-	receivePoints(st, m, ndps, func(p point, ndp pmetric.NumberDataPoint) value {
+func (st *storage) receiveNumberPoints(reqId reqId, m *metric, ndps pmetric.NumberDataPointSlice) {
+	receivePoints(st, reqId, m, ndps, func(p point, ndp pmetric.NumberDataPoint) pointlike {
 		numberPoint := numberPoint{
 			point:     p,
 			exemplars: convertExemplars(ndp.Exemplars()),
@@ -361,8 +385,8 @@ type histolikePointGetter interface {
 var _ histolikePointGetter = pmetric.HistogramDataPoint{}
 var _ histolikePointGetter = pmetric.ExponentialHistogramDataPoint{}
 
-func receiveHistolikePoints[T histolikePointGetter](st *storage, m *metric, ps pointSlice[T], makePoint func(histolikePoint, T) value) {
-	receivePoints(st, m, ps, func(p point, dp T) value {
+func receiveHistolikePoints[T histolikePointGetter](st *storage, reqId reqId, m *metric, ps pointSlice[T], makePoint func(histolikePoint, T) pointlike) {
+	receivePoints(st, reqId, m, ps, func(p point, dp T) pointlike {
 		return makePoint(histolikePoint{
 			point: p,
 			count: dp.Count(),
@@ -383,7 +407,9 @@ func receiveHistolikePoints[T histolikePointGetter](st *storage, m *metric, ps p
 	})
 }
 
-func (st *storage) receiveMetrics(m pmetric.Metrics) {
+func (st *storage) receiveMetrics(m pmetric.Metrics, req requestMeta) {
+	reqId := st.receiveRequestMeta(req)
+
 	rms := m.ResourceMetrics()
 	for i := range rms.Len() {
 		rm := rms.At(i)
@@ -452,11 +478,11 @@ func (st *storage) receiveMetrics(m pmetric.Metrics) {
 
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					st.receiveNumberPoints(m2, m.Gauge().DataPoints())
+					st.receiveNumberPoints(reqId, m2, m.Gauge().DataPoints())
 				case pmetric.MetricTypeSum:
-					st.receiveNumberPoints(m2, m.Sum().DataPoints())
+					st.receiveNumberPoints(reqId, m2, m.Sum().DataPoints())
 				case pmetric.MetricTypeHistogram:
-					receiveHistolikePoints(st, m2, m.Histogram().DataPoints(), func(hlp histolikePoint, hdp pmetric.HistogramDataPoint) value {
+					receiveHistolikePoints(st, reqId, m2, m.Histogram().DataPoints(), func(hlp histolikePoint, hdp pmetric.HistogramDataPoint) pointlike {
 						hp := histogramPoint{
 							histolikePoint: hlp,
 						}
@@ -480,7 +506,7 @@ func (st *storage) receiveMetrics(m pmetric.Metrics) {
 						return hp
 					})
 				case pmetric.MetricTypeExponentialHistogram:
-					receiveHistolikePoints(st, m2, m.ExponentialHistogram().DataPoints(), func(hlp histolikePoint, ehdp pmetric.ExponentialHistogramDataPoint) value {
+					receiveHistolikePoints(st, reqId, m2, m.ExponentialHistogram().DataPoints(), func(hlp histolikePoint, ehdp pmetric.ExponentialHistogramDataPoint) pointlike {
 						return exponentialHistogramPoint{
 							histolikePoint: hlp,
 							scale:          ehdp.Scale(),
@@ -498,7 +524,7 @@ func (st *storage) receiveMetrics(m pmetric.Metrics) {
 					})
 
 				case pmetric.MetricTypeSummary:
-					receivePoints(st, m2, m.Summary().DataPoints(), func(p point, sp pmetric.SummaryDataPoint) value {
+					receivePoints(st, reqId, m2, m.Summary().DataPoints(), func(p point, sp pmetric.SummaryDataPoint) pointlike {
 						qvs := sp.QuantileValues()
 						sp2 := summaryPoint{
 							point:     p,

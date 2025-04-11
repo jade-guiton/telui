@@ -1,11 +1,18 @@
 package main
 
 import (
+	"cmp"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"hash"
 	"hash/fnv"
 	"io"
+	"net/http"
+	"slices"
+
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 )
 
 func hashToBytes(x uint64) []byte {
@@ -21,6 +28,7 @@ func hashHash(x uint64, h hash.Hash64) {
 type hashId uint64
 type traceId [16]byte
 
+type reqId uint64
 type resId uint64
 type scopeId uint64
 type spanId [8]byte
@@ -29,6 +37,9 @@ type traceSpanId struct {
 	spanId
 }
 
+func (reqId reqId) hashInto(h hash.Hash64) {
+	hashHash(uint64(reqId), h)
+}
 func (rid resId) hashInto(h hash.Hash64) {
 	hashHash(uint64(rid), h)
 }
@@ -43,6 +54,9 @@ func (v traceSpanId) hashInto(h hash.Hash64) {
 	forceWrite(h, v.spanId[:])
 }
 
+func (v reqId) toJson(w io.Writer) {
+	forcePrintf(w, `{"_req":"%x"}`, hashToBytes(uint64(v)))
+}
 func (v resId) toJson(w io.Writer) {
 	forcePrintf(w, `{"_res":"%x"}`, hashToBytes(uint64(v)))
 }
@@ -68,6 +82,86 @@ func (tid traceId) toString() string {
 }
 func (sid spanId) toString() string {
 	return hex.EncodeToString(sid[:])
+}
+
+type requestMeta struct {
+	transport string
+	peer      string
+	headers   map[string][]string
+}
+
+var _ hashableValue = requestMeta{}
+
+func grpcRequest(ctx context.Context) requestMeta {
+	var req requestMeta
+	req.transport = "grpc"
+	if p, ok := peer.FromContext(ctx); ok {
+		req.peer = p.Addr.String()
+	}
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		req.headers = md.Copy()
+		delete(req.headers, "Content-Length")
+	}
+	return req
+}
+
+func httpRequest(r *http.Request) requestMeta {
+	var req requestMeta
+	req.transport = "http"
+	req.peer = r.RemoteAddr
+	req.headers = r.Header.Clone()
+	delete(req.headers, "Content-Length")
+	return req
+}
+
+type kvs = struct {
+	k  string
+	vs []string
+}
+
+func (r requestMeta) sortedHeaders() []kvs {
+	headers := []kvs{}
+	for k, vs := range r.headers {
+		headers = append(headers, kvs{k: k, vs: vs})
+	}
+	slices.SortFunc(headers, func(a kvs, b kvs) int {
+		return cmp.Compare(a.k, b.k)
+	})
+	return headers
+}
+
+func (r requestMeta) hashInto(h hash.Hash64) {
+	forceWriteString(h, r.transport)
+	forceWriteString(h, r.peer)
+	for _, kvs := range r.sortedHeaders() {
+		forceWriteString(h, kvs.k)
+		for _, v := range kvs.vs {
+			forceWriteString(h, v)
+		}
+	}
+}
+func (r requestMeta) toJson(w io.Writer) {
+	m := mapify(w)
+	defer m.done()
+	m.pair("transport", stringValue(r.transport))
+	if r.peer != "" {
+		m.pair("peer", stringValue(r.peer))
+	}
+	if r.headers != nil {
+		m2 := m.submap("headers")
+		for _, kvs := range r.sortedHeaders() {
+			if len(kvs.vs) == 1 {
+				m2.pair(kvs.k, stringValue(kvs.vs[0]))
+			} else {
+				a := m2.array(kvs.k)
+				for _, v := range kvs.vs {
+					a.item(stringValue(v))
+				}
+				a.done()
+			}
+		}
+		m2.done()
+	}
 }
 
 type resource struct {
@@ -171,6 +265,7 @@ func (ss spanSummary) toJson(m *mapifier) {
 }
 
 type span struct {
+	req   reqId
 	res   resId
 	scope scopeId
 	spanSummary
@@ -191,6 +286,7 @@ var _ value = span{}
 func (s span) toJson(w io.Writer) {
 	m := mapify(w)
 	defer m.done()
+	m.pair("req", s.req)
 	m.pair("res", s.res)
 	m.pair("scope", s.scope)
 	s.spanSummary.toJson(&m)
@@ -298,6 +394,7 @@ func (ls logSummary) toJson(w io.Writer) {
 
 type log struct {
 	logSummary
+	req         reqId
 	res         resId
 	scope       scopeId
 	time        timestampValue
@@ -317,6 +414,7 @@ var _ value = log{}
 func (l log) toJson(w io.Writer) {
 	m := mapify(w)
 	defer m.done()
+	m.pair("req", l.req)
 	m.pair("res", l.res)
 	m.pair("scope", l.scope)
 	if l.time.notEmpty() {
@@ -425,7 +523,7 @@ func (me metric) toJson(w io.Writer) {
 
 type metricStream struct {
 	attr   mapValue
-	points []value
+	points []pointlike
 }
 
 func (ms metricStream) toJson(w io.Writer) {
@@ -445,6 +543,7 @@ type point struct {
 	time      timestampValue
 	timeStart timestampValue
 	flags     flagsValue
+	req       reqId
 }
 
 func (p point) toJson(m *mapifier) {
@@ -455,6 +554,16 @@ func (p point) toJson(m *mapifier) {
 	if p.flags != 0 {
 		m.pair("flags", p.flags)
 	}
+	m.pair("req", p.req)
+}
+
+type pointlike interface {
+	value
+	getPoint() point
+}
+
+func (p point) getPoint() point {
+	return p
 }
 
 type numberPoint struct {

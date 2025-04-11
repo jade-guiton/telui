@@ -88,6 +88,7 @@ func serveUi(st *storage, endpoint string) (stopFunc, error) {
 			m.pair("span", span)
 			m.pair("scope", st.scopes[span.scope])
 			m.pair("resource", st.resources[span.res])
+			m.pair("request", st.requests[span.req])
 			m.done()
 		})
 	})
@@ -123,6 +124,7 @@ func serveUi(st *storage, endpoint string) (stopFunc, error) {
 			m.pair("log", log)
 			m.pair("scope", st.scopes[log.scope])
 			m.pair("resource", st.resources[log.res])
+			m.pair("request", st.requests[log.req])
 		})
 	})
 
@@ -169,8 +171,21 @@ func serveUi(st *storage, endpoint string) (stopFunc, error) {
 			writeError(w, http.StatusNotFound)
 			return
 		}
+		requests := map[reqId]struct{}{}
+		for _, stream := range metric.streams {
+			for _, pt := range stream.points {
+				requests[pt.getPoint().req] = struct{}{}
+			}
+		}
 		writeGzipJson(w, func(w io.Writer) {
-			metric.toJson(w)
+			m := mapify(w)
+			m.pair("metric", metric)
+			m2 := m.submap("requests")
+			for reqId, _ := range requests {
+				m2.pair(hashToString(uint64(reqId)), st.requests[reqId])
+			}
+			m2.done()
+			m.done()
 		})
 	})
 

@@ -107,7 +107,7 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 			fmt.Fprintf(os.Stderr, "Invalid trace request from %s: %v", r.RemoteAddr, err)
 			return
 		}
-		storage.receiveTraces(req.Traces())
+		storage.receiveTraces(req.Traces(), httpRequest(r))
 		if err = ack(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
 		}
@@ -121,7 +121,7 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 			fmt.Fprintf(os.Stderr, "Invalid log request from %s: %v", r.RemoteAddr, err)
 			return
 		}
-		storage.receiveLogs(req.Logs())
+		storage.receiveLogs(req.Logs(), httpRequest(r))
 		if err = ack(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
 		}
@@ -134,7 +134,7 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 			fmt.Fprintf(os.Stderr, "Invalid metric request from %s: %v", r.RemoteAddr, err)
 			return
 		}
-		storage.receiveMetrics(req.Metrics())
+		storage.receiveMetrics(req.Metrics(), httpRequest(r))
 		if err = ack(); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
 		}
