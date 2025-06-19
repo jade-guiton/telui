@@ -14,7 +14,7 @@ import (
 	"os"
 	"strconv"
 
-	"jadeg.net/go/telui/static"
+	"github.com/jade-guiton/telui/static"
 )
 
 func writeGzipJson(w http.ResponseWriter, producer func(io.Writer)) {

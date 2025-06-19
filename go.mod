@@ -1,4 +1,4 @@
-module jadeg.net/go/telui
+module github.com/jade-guiton/telui
 
 go 1.24.0
 
