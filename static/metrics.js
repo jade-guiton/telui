@@ -1,6 +1,7 @@
-function sortedEntries(obj) {
+function sortedEntries(obj, key) {
+	key ??= (k,v) => k;
 	const arr = Object.entries(obj);
-	arr.sort(([k1,], [k2,]) => cmp(k1, k2));
+	arr.sort(([k1,v1], [k2,v2]) => cmp(key(k1,v1), key(k2,v2)));
 	return arr;
 }
 
@@ -28,10 +29,10 @@ async function updateMetrics() {
 		...(resArr.length == 0 ? [document.createTextNode("No metrics.")] : resArr.map(([resId, scopes]) => {
 			const resourceContent = resourceTemplate.content.cloneNode(true);
 			resourceContent.querySelector(".resource-props").replaceChildren(...renderMap(data, data.resources[resId]));
-			resourceContent.querySelector(".resource-items").replaceChildren(...sortedEntries(scopes).map(([scopeId, metrics]) => {
+			resourceContent.querySelector(".resource-items").replaceChildren(...sortedEntries(scopes, (k,) => [data.scopes[k]?.name, k]).map(([scopeId, metrics]) => {
 				const scopeContent = scopeTemplate.content.cloneNode(true);
 				scopeContent.querySelector(".scope-props").replaceChildren(...renderMap(data, data.scopes[scopeId]));
-				scopeContent.querySelector(".scope-items").replaceChildren(...sortedEntries(metrics).map(([metricId, metric]) => {
+				scopeContent.querySelector(".scope-items").replaceChildren(...sortedEntries(metrics, (k,v) => [v.name,k]).map(([metricId, metric]) => {
 					const metricContent = metricTemplate.content.cloneNode(true);
 
 					metricContent.querySelector(".metric-name").innerText = metric.name;
