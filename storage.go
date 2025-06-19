@@ -179,7 +179,7 @@ func (st *storage) receiveTraces(t ptrace.Traces, req requestMeta) {
 					st.traces[tid] = tr
 				}
 				if _, ok := tr.spans[sid]; ok {
-					fmt.Fprintf(os.Stderr, "Warning: span %x received twice", sid)
+					fmt.Fprintf(os.Stderr, "Warning: span %x received twice\n", sid)
 				} else {
 					tr.spans[sid] = sp2
 				}

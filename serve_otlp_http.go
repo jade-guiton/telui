@@ -104,12 +104,12 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 		res := ptraceotlp.NewExportResponse()
 		ack, err := readOtlpRequest(w, r, &req, &res)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid trace request from %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Invalid trace request from %s: %v\n", r.RemoteAddr, err)
 			return
 		}
 		storage.receiveTraces(req.Traces(), httpRequest(r))
 		if err = ack(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v\n", r.RemoteAddr, err)
 		}
 	})
 
@@ -118,12 +118,12 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 		res := plogotlp.NewExportResponse()
 		ack, err := readOtlpRequest(w, r, &req, &res)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid log request from %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Invalid log request from %s: %v\n", r.RemoteAddr, err)
 			return
 		}
 		storage.receiveLogs(req.Logs(), httpRequest(r))
 		if err = ack(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v\n", r.RemoteAddr, err)
 		}
 	})
 	mux.HandleFunc("/v1/metrics", func(w http.ResponseWriter, r *http.Request) {
@@ -131,12 +131,12 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 		res := pmetricotlp.NewExportResponse()
 		ack, err := readOtlpRequest(w, r, &req, &res)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid metric request from %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Invalid metric request from %s: %v\n", r.RemoteAddr, err)
 			return
 		}
 		storage.receiveMetrics(req.Metrics(), httpRequest(r))
 		if err = ack(); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v", r.RemoteAddr, err)
+			fmt.Fprintf(os.Stderr, "Failed to respond to %s: %v\n", r.RemoteAddr, err)
 		}
 	})
 
