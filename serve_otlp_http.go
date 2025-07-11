@@ -3,10 +3,8 @@ package main
 import (
 	"compress/gzip"
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 
@@ -96,7 +94,7 @@ func readOtlpRequest(w http.ResponseWriter, r *http.Request, req requestObject, 
 	}, nil
 }
 
-func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
+func serveOtlpHttp(storage *storage, port int) (stopFunc, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/v1/traces", func(w http.ResponseWriter, r *http.Request) {
@@ -140,18 +138,11 @@ func serveOtlpHttp(storage *storage, endpoint string) (stopFunc, error) {
 		}
 	})
 
-	listener, err := net.Listen("tcp", endpoint)
+	server := http.Server{Handler: mux}
+	err := serveLocalhost(&server, "OTLP/HTTP", port)
 	if err != nil {
 		return nil, err
 	}
-	server := http.Server{Handler: mux}
-	fmt.Printf("Started OTLP/HTTP endpoint at http://%s\n", endpoint)
-	go func() {
-		err := server.Serve(listener)
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "Fatal error in OTLP/HTTP server: %v\n", err)
-		}
-	}()
 	return func() {
 		server.Shutdown(context.Background())
 	}, nil

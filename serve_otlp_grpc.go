@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"os"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -44,23 +41,16 @@ func (ms *metricServer) Export(ctx context.Context, req pmetricotlp.ExportReques
 	return pmetricotlp.NewExportResponse(), nil
 }
 
-func serveOtlpGrpc(storage *storage, endpoint string) (stopFunc, error) {
+func serveOtlpGrpc(storage *storage, port int) (stopFunc, error) {
 	grpcServer := grpc.NewServer()
 	ptraceotlp.RegisterGRPCServer(grpcServer, &traceServer{st: storage})
 	plogotlp.RegisterGRPCServer(grpcServer, &logServer{st: storage})
 	pmetricotlp.RegisterGRPCServer(grpcServer, &metricServer{st: storage})
 
-	listener, err := net.Listen("tcp", endpoint)
+	err := serveLocalhost(grpcServer, "OTLP/gRPC", port)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Started OTLP/gRPC endpoint at %s\n", endpoint)
-	go func() {
-		err := grpcServer.Serve(listener)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Fatal error in OTLP/gRPC server: %v\n", err)
-		}
-	}()
 	return func() {
 		grpcServer.GracefulStop()
 	}, nil

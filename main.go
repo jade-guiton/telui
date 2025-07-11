@@ -26,7 +26,7 @@ func start() error {
 	storage := newStorage(*verbose)
 
 	if *grpcPort != 0 {
-		otlpGrpc, err := serveOtlpGrpc(storage, fmt.Sprintf("localhost:%d", *grpcPort))
+		otlpGrpc, err := serveOtlpGrpc(storage, *grpcPort)
 		if err != nil {
 			return err
 		}
@@ -34,14 +34,14 @@ func start() error {
 	}
 
 	if *httpPort != 0 {
-		otlpHttp, err := serveOtlpHttp(storage, fmt.Sprintf("localhost:%d", *httpPort))
+		otlpHttp, err := serveOtlpHttp(storage, *httpPort)
 		if err != nil {
 			return err
 		}
 		defer otlpHttp.stop()
 	}
 
-	api, err := serveUi(storage, fmt.Sprintf("localhost:%d", *uiPort))
+	api, err := serveUi(storage, *uiPort)
 	if err != nil {
 		return err
 	}

@@ -6,12 +6,8 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/jade-guiton/telui/static"
@@ -51,7 +47,7 @@ func parseHashId(hashIdStr string) (uint64, bool) {
 	return hid, true
 }
 
-func serveUi(st *storage, endpoint string) (stopFunc, error) {
+func serveUi(st *storage, port int) (stopFunc, error) {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /", http.FileServerFS(static.StaticFs))
@@ -193,18 +189,11 @@ func serveUi(st *storage, endpoint string) (stopFunc, error) {
 		st.reset()
 	})
 
-	listener, err := net.Listen("tcp", endpoint)
+	server := http.Server{Handler: mux}
+	err := serveLocalhost(&server, "UI", port)
 	if err != nil {
 		return nil, err
 	}
-	server := http.Server{Handler: mux}
-	fmt.Printf("Starting UI endpoint at http://%s\n", endpoint)
-	go func() {
-		err := server.Serve(listener)
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "Fatal error in API server: %v\n", err)
-		}
-	}()
 	return func() {
 		server.Shutdown(context.Background())
 	}, nil
